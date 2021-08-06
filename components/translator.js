@@ -1,55 +1,52 @@
+/*jshint esversion: 6, node: ture*/
 const americanOnly = require('./american-only.js');
 const americanToBritishSpelling = require('./american-to-british-spelling.js');
-const americanToBritishTitles = require("./american-to-british-titles.js")
-const britishOnly = require('./british-only.js')
+const americanToBritishTitles = require("./american-to-british-titles.js");
+const britishOnly = require('./british-only.js');
 
 class Translator {
     americanToBritish(text) {
         if (!text) return text;
 
-        let copy = text;
-        for (let key in americanOnly)
-            if (copy.indexOf(key) !== -1)
-                copy = copy.replace(key, americanOnly[key]);
-
-        return copy
-            .split(' ')
-            .map(d => {
-                const newD = d.toLowerCase();
-                return /\d{1,2}:\d{2}/.test(newD) ?
-                    newD.replace(':', '.') :
-                    americanToBritishSpelling.hasOwnProperty(newD) ?
-                    americanToBritishSpelling[newD] :
-                    americanToBritishTitles.hasOwnProperty(newD) ?
-                    americanToBritishTitles[newD].replace(/^\w/, c => c.toUpperCase()) :
-                    d;
-            })
-            .join(' ');
+        return this.languageToLanguage(text, americanOnly, americanToBritishSpelling, americanToBritishTitles);
     }
 
     britishToAmerican(text) {
         if (!text) return text;
 
-        let copy = text;
         const britishToAmericanSpelling = this.invertObj(americanToBritishSpelling);
         const britishToAmericanTitles = this.invertObj(americanToBritishTitles);
 
-        for (let key in britishOnly)
-            if (copy.includes(key))
-                copy = copy.replace(key, britishOnly[key]);
+        return this.languageToLanguage(text, britishOnly, britishToAmericanSpelling, britishToAmericanTitles, ['.', ':']);
+
+    }
+
+    languageToLanguage(text, only, spelling, titles, regex = [':', '.']) {
+        let copy = text;
+        for (let key in only)
+            if (RegExp('\(\^' + key + '\|\\s' + key + '\)' + '\[\\s.\]', 'i').test(copy))
+                copy = copy.replace(RegExp(key, 'i'), only[key]);
 
         return copy
             .split(' ')
             .map(d => {
-                const newD = d.toLowerCase();
-                return /\d{1,2}[.]\d{2}/.test(newD) ?
-                    newD.replace('.', ':') :
-                    britishToAmericanSpelling.hasOwnProperty(newD) ?
-                    britishToAmericanSpelling[newD] :
-                    britishToAmericanTitles.hasOwnProperty(newD) ?
-                    britishToAmericanTitles[newd].replace(/^\w/, c => c.toUpperCase()) :
+                const dLower = d.toLowerCase();
+                return RegExp('\\d\{1,2\}\[' + regex[0] + '\]\\d\{2\}').test(dLower) ?
+                    dLower.replace(regex[0], regex[1]) :
+                    spelling.hasOwnProperty(dLower) ?
+                    spelling[dLower] :
+                    titles.hasOwnProperty(dLower) ?
+                    titles[dLower].replace(/^\w/, c => c.toUpperCase()) :
                     d;
             })
+            .join(' ');
+    }
+    highlighter(text, translatedText) {
+        const textWords = text.split(' ');
+
+        return translatedText
+            .split(' ')
+            .map(d => textWords.includes(d) ? d : this.spanEncapsulate(d))
             .join(' ');
     }
 
@@ -60,6 +57,11 @@ class Translator {
         return invObj;
     }
 
+
+    spanEncapsulate(text) {
+        return '<span class="highlight">' + text + '</span>';
+    }
 }
+
 
 module.exports = Translator;

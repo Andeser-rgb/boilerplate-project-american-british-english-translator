@@ -14,26 +14,19 @@ module.exports = function(app) {
                 locale
             } = req.body;
 
-            if (!text || !locale) {
+            if (text === undefined || locale === undefined) {
                 res.json({
                     error: 'Required field(s) missing'
                 });
                 return;
             }
-            if (text === "") {
-                res.jsone({
+            if (/^\s*$/.test(text)) {
+                res.json({
                     error: "No text to translate"
                 });
                 return;
             }
-            if (locale !== 'american-to-british' && locale !== 'british-to-american') {
-                res.json({
-                    error: 'Invalid value for locale field'
-                });
-                return;
-            }
             let translatedText;
-            let textWords = text.split(' ');
             switch (locale) {
                 case 'american-to-british':
                     translatedText = translator.americanToBritish(text);
@@ -42,7 +35,10 @@ module.exports = function(app) {
                     translatedText = translator.britishToAmerican(text);
                     break;
                 default:
-                    break;
+                    res.json({
+                        error: 'Invalid value for locale field'
+                    });
+                    return;
             }
             if (translatedText === text) {
                 res.json({
@@ -52,14 +48,7 @@ module.exports = function(app) {
                 return;
             }
 
-            translatedText
-                .split(' ')
-                .map(d => {
-                    return textWords.includes(d) ?
-                        spanEncapsulate(d) :
-                        d;
-                })
-                .join(' ');
+            translatedText = translator.highlighter(text, translatedText);
 
             res.json({
                 text: text,
@@ -68,7 +57,3 @@ module.exports = function(app) {
 
         });
 };
-
-function spanEncapsulate(text) {
-    return '<span class="highlight">' + text + '</span>';
-}
