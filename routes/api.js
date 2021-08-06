@@ -14,14 +14,14 @@ module.exports = function(app) {
                 locale
             } = req.body;
 
-            if (!text || !locale) {
+            if (text === undefined || locale === undefined) {
                 res.json({
                     error: 'Required field(s) missing'
                 });
                 return;
             }
-            if (text === "") {
-                res.jsone({
+            if (/^[ ]*$/.test(text)) {
+                res.json({
                     error: "No text to translate"
                 });
                 return;
@@ -52,12 +52,10 @@ module.exports = function(app) {
                 return;
             }
 
-            translatedText
+            translatedText = translatedText
                 .split(' ')
                 .map(d => {
-                    return textWords.includes(d) ?
-                        spanEncapsulate(d) :
-                        d;
+                    return textWords.includes(d) ? d : spanEncapsulate(d);
                 })
                 .join(' ');
 
