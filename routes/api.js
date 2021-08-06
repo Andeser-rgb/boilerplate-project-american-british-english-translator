@@ -20,25 +20,47 @@ module.exports = function(app) {
                 });
                 return;
             }
-            let translatedText = 'ciccio';
-            let textWords = text.split(' ');
-            if (locale === 'american-to-british') {
-                translatedText = translator.americanToBritish(text)
-                    .split(' ')
-                    .map(d => {
-                        return textWords.includes(d) ? d : spanEncapsulate(d);
-                    })
-                    .join(' ');
-            } else if (locale === 'british-to-american') {
-                translatedText = translator.britishToAmerican(text)
-                    .split(' ')
-                    .map(d => {
-                        return textWords.includes(d) ?
-                            spanEncapsulate(d) :
-                            d;
-                    })
-                    .join(' ');
+            if (text === "") {
+                res.jsone({
+                    error: "No text to translate"
+                });
+                return;
             }
+            if (locale !== 'american-to-british' && locale !== 'british-to-american') {
+                res.json({
+                    error: 'Invalid value for locale field'
+                });
+                return;
+            }
+            let translatedText;
+            let textWords = text.split(' ');
+            switch (locale) {
+                case 'american-to-british':
+                    translatedText = translator.americanToBritish(text);
+                    break;
+                case 'british-to-american':
+                    translatedText = translator.britishToAmerican(text);
+                    break;
+                default:
+                    break;
+            }
+            if (translatedText === text) {
+                res.json({
+                    text: text,
+                    translation: 'Everything looks good to me!'
+                });
+                return;
+            }
+
+            translatedText
+                .split(' ')
+                .map(d => {
+                    return textWords.includes(d) ?
+                        spanEncapsulate(d) :
+                        d;
+                })
+                .join(' ');
+
             res.json({
                 text: text,
                 translation: translatedText
